@@ -1,0 +1,14 @@
+CRYPTANALYTIC ATTACK TYPES
+
+Attack	       VS      What the attacker knows
+
+Ciphertext-only:	Only ciphertext samples
+Known-plaintext:	Some plaintext–ciphertext pairs
+Chosen-plaintext:	Can choose plaintext and obtain ciphertext
+Chosen-ciphertext:	Can choose ciphertext and obtain its decryption
+
+Brute force:    	Tries all possible keys
+Frequency analysis:	Uses language letter-frequency patterns
+
+CIW ↔ YES: known-plaintext attack.
+Eve types abcdefghi: chosen-plaintext attack.
