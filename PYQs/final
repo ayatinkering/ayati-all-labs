@@ -1,0 +1,995 @@
+THE 5-MINUTE EXAM ALGORITHM
+
+When the question appears:
+
+1. READ
+2. UNDERLINE algorithms
+3. UNDERLINE roles
+4. MAKE permission table
+5. DRAW security pipeline
+6. COPY matching template blocks
+7. CHANGE names/inputs
+8. CONNECT blocks
+9. RUN normal case
+10. RUN tampered case
+11. SHOW output
+
+That's your entire strategy.
+
+PART 1 — When you first receive the question
+
+Do NOT start coding immediately.
+
+Read the question once completely.
+
+Then read it a second time and mark:
+
+Algorithms
+
+Look for:
+
+RSA
+AES
+AES-128
+DES
+SHA-256
+SHA-1
+MD5
+ElGamal
+Diffie-Hellman
+custom hash
+digital signature
+Data
+
+Look for:
+
+.txt file
+patient information
+academic record
+transaction
+authorization code
+message
+Roles
+
+Look for:
+
+Student
+Faculty
+HoD
+
+Doctor
+Nurse
+Admin
+
+Patient
+Doctor
+Auditor
+Special requirements
+
+Look for:
+
+menu-driven
+timestamp
+store in file
+tamper
+integrity
+verification
+don't decrypt if invalid
+display n, e, d
+shared key
+IV
+PART 2 — Make a tiny requirement table
+
+Suppose you get EduSecure.
+
+Immediately write:
+
+Algorithm:
+DES
+SHA-256
+RSA Signature
+
+Roles:
+Student
+Faculty
+HoD
+
+Then:
+
+Student:
+DES encrypt
+SHA hash
+RSA sign
+store
+
+Faculty:
+view
+SHA verify
+RSA verify
+DES decrypt
+
+HoD:
+view hash
+view timestamp
+RSA verify
+NO decrypt
+
+That's your specification.
+
+PART 3 — Identify the security pipeline
+
+For EduSecure, write:
+
+STUDENT:
+
+file
+ ↓
+DES encrypt
+ ↓
+ciphertext
+ ↓
+SHA-256
+ ↓
+hash
+ ↓
+RSA private key
+ ↓
+signature
+ ↓
+store
+
+Then:
+
+FACULTY:
+
+ciphertext
+ ↓
+SHA-256
+ ↓
+compare stored hash
+
+signature
+ ↓
+RSA public key
+ ↓
+verify
+
+if BOTH valid
+ ↓
+DES decrypt
+ ↓
+plaintext
+
+Then:
+
+HOD:
+
+record ID
+hash
+timestamp
+signature verification
+
+NO DECRYPTION
+
+Now you know the program.
+
+PART 4 — Open your master template
+
+You don't start from an empty Python file.
+
+Open:
+
+00_MASTER_TEMPLATE.py
+
+Search for the required blocks.
+
+For EduSecure:
+
+DES
+SHA-256
+RSA SIGNATURE
+FILE
+TIMESTAMP
+RBAC
+RECORD STORAGE
+
+Copy those.
+
+Delete:
+
+AES
+ElGamal
+DH
+custom hash
+financial advisor
+HealthSecure
+MediSecure
+
+unless the question asks for them.
+
+PART 5 — Build imports first
+
+For EduSecure you need:
+
+import hashlib
+from datetime import datetime
+
+from Crypto.Cipher import DES
+from Crypto.Util.Padding import pad, unpad
+
+from Crypto.PublicKey import RSA
+from Crypto.Signature import pkcs1_15
+from Crypto.Hash import SHA256
+
+Don't think about these.
+
+They're just your toolbox.
+
+PART 6 — Create your storage
+
+If the question says:
+
+use list, array, dictionary or file
+
+use:
+
+records = []       # simple database
+
+You don't need PostgreSQL.
+
+You don't need MongoDB.
+
+You don't need anything fancy.
+
+Then each record can be:
+
+record = {
+    "filename": filename,
+    "encrypted": encrypted,
+    "hash": hash_value,
+    "signature": signature,
+    "iv": iv,
+    "timestamp": timestamp
+}
+
+Think:
+
+record = ONE ROW OF DATABASE
+PART 7 — Write the cryptographic helper functions
+
+You should always create these first if relevant.
+
+SHA
+def sha256_hash(data):
+    return hashlib.sha256(data).hexdigest()
+Timestamp
+def get_timestamp():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+DES encrypt
+def des_encrypt(data, key, iv):
+    cipher = DES.new(key, DES.MODE_CBC, iv)
+    return cipher.encrypt(pad(data, DES.block_size))
+DES decrypt
+def des_decrypt(encrypted, key, iv):
+    cipher = DES.new(key, DES.MODE_CBC, iv)
+    return unpad(
+        cipher.decrypt(encrypted),
+        DES.block_size
+    )
+RSA keys
+def generate_rsa_keys():
+    private_key = RSA.generate(2048)
+    public_key = private_key.publickey()
+    return private_key, public_key
+Signature
+def sign_data(data, private_key):
+    h = SHA256.new(data)
+    return pkcs1_15.new(private_key).sign(h)
+Verify
+def verify_signature(data, signature, public_key):
+    h = SHA256.new(data)
+
+    try:
+        pkcs1_15.new(public_key).verify(h, signature)
+        return True
+    except:
+        return False
+
+These are your building blocks.
+
+PART 8 — Implement the sender/uploader first
+
+This is usually:
+
+Student
+Patient
+Doctor
+
+depending on question.
+
+Always think:
+
+INPUT
+ ↓
+ENCRYPT
+ ↓
+HASH
+ ↓
+SIGN
+ ↓
+STORE
+PART 9 — Read the input
+
+If file:
+
+with open(filename, "rb") as f:
+    data = f.read()
+
+If user enters patient information:
+
+patient = {
+    "name": input("Name: "),
+    "age": input("Age: "),
+    "gender": input("Gender: "),
+    "diagnosis": input("Diagnosis: ")
+}
+
+Then convert dictionary to text:
+
+data = str(patient).encode()
+PART 10 — Encrypt
+
+If question says DES:
+
+encrypted = des_encrypt(data, des_key, iv)
+
+If question says AES:
+
+encrypted = aes_encrypt(data, aes_key, iv)
+
+If question explicitly says RSA encryption:
+
+encrypted = rsa_encrypt(data, public_key)
+
+That's your decision.
+
+PART 11 — Hash
+
+Question says:
+
+Compute SHA-256 hash of encrypted record.
+
+Do:
+
+hash_value = sha256_hash(encrypted)
+
+Remember:
+
+QUESTION SAYS HASH ENCRYPTED DATA
+              ↓
+sha256_hash(encrypted)
+
+If question says hash plaintext:
+
+sha256_hash(data)
+
+Always hash exactly what the question says.
+
+PART 12 — Sign
+
+Question says:
+
+Sign using private RSA key.
+
+Do:
+
+signature = sign_data(
+    encrypted,
+    private_key
+)
+
+Mental rule:
+
+PRIVATE → SIGN
+PUBLIC  → VERIFY
+PART 13 — Timestamp
+
+Do:
+
+timestamp = get_timestamp()
+PART 14 — Store
+
+Put everything together:
+
+record = {
+    "filename": filename,
+    "encrypted": encrypted,
+    "hash": hash_value,
+    "signature": signature,
+    "iv": iv,
+    "timestamp": timestamp
+}
+
+Then:
+
+records.append(record)
+
+You have completed the upload side.
+
+PART 15 — Implement the receiver
+
+Now identify the receiver:
+
+EduSecure → Faculty
+HealthSecure → Nurse / Doctor
+MediSecure → Doctor
+
+The receiver usually does:
+
+VIEW
+ ↓
+HASH VERIFY
+ ↓
+SIGNATURE VERIFY
+ ↓
+DECRYPT
+PART 16 — Hash verification
+
+Take encrypted data:
+
+encrypted = record["encrypted"]
+
+Calculate:
+
+new_hash = sha256_hash(encrypted)
+
+Compare:
+
+if new_hash == record["hash"]:
+    integrity_ok = True
+    print("Integrity VERIFIED")
+else:
+    integrity_ok = False
+    print("Integrity FAILED")
+PART 17 — Signature verification
+signature_ok = verify_signature(
+    encrypted,
+    record["signature"],
+    public_key
+)
+
+Then:
+
+if signature_ok:
+    print("Signature VALID")
+else:
+    print("Signature INVALID")
+PART 18 — The golden security if
+
+This is the line you should be able to find in your template in every security-system question:
+
+if integrity_ok and signature_ok:
+
+Then:
+
+    decrypted = des_decrypt(
+        encrypted,
+        des_key,
+        record["iv"]
+    )
+
+    print(decrypted.decode())
+
+Otherwise:
+
+else:
+    print("Verification failed.")
+    print("Decryption NOT allowed.")
+
+This handles:
+
+"If integrity failed don't perform decryption."
+
+and:
+
+"Display plaintext only if both checks are successful."
+
+PART 19 — Implement restricted roles
+
+This is where people make mistakes.
+
+Make a table.
+
+For EduSecure:
+
+                 ENCRYPT  SIGN  DECRYPT  HASH  VERIFY
+Student            YES     YES     NO      -      -
+Faculty             -       -      YES     YES    YES
+HoD                 -       -       NO     YES    YES
+
+For HealthSecure:
+
+                 ENCRYPT  SIGN  DECRYPT  HASH  VERIFY
+Doctor              YES    YES     YES     YES    YES
+Nurse                -      -       NO     YES    YES
+Admin                -      -       NO      -     YES
+
+For MediSecure:
+
+                 ENCRYPT  SIGN  DECRYPT  HASH  VERIFY
+Patient             YES    YES      NO      -      -
+Doctor               -      -      YES     YES    YES
+Auditor              -      -       NO      -     YES
+
+This table tells you what code to put in each menu.
+
+PART 20 — Menu
+
+Start with:
+
+while True:
+
+    print("\n1. Student")
+    print("2. Faculty")
+    print("3. HoD")
+    print("4. Exit")
+
+    choice = input("Enter choice: ")
+
+Then:
+
+if choice == "1":
+    student_menu()
+
+elif choice == "2":
+    faculty_menu()
+
+elif choice == "3":
+    hod_menu()
+
+elif choice == "4":
+    break
+
+That's RBAC at the basic lab level.
+
+PART 21 — Student menu
+def student_menu():
+
+    print("\nSTUDENT")
+    print("1. Upload record")
+    print("2. View records")
+    print("3. Back")
+
+    choice = input("Enter choice: ")
+
+    if choice == "1":
+        student_upload()
+
+    elif choice == "2":
+        view_records()
+
+Notice:
+
+There is no decrypt option.
+
+PART 22 — Faculty menu
+def faculty_menu():
+
+    print("\nFACULTY")
+    print("1. View records")
+    print("2. Verify and decrypt")
+    print("3. Back")
+
+    choice = input("Enter choice: ")
+
+    if choice == "1":
+        view_records()
+
+    elif choice == "2":
+        faculty_verify_decrypt()
+
+Faculty has decryption.
+
+PART 23 — HoD menu
+def hod_menu():
+
+    print("\nHOD")
+    print("1. View hashes")
+    print("2. Verify signatures")
+    print("3. Back")
+
+    choice = input("Enter choice: ")
+
+    if choice == "1":
+        hod_view()
+
+    elif choice == "2":
+        hod_verify()
+
+No decryption.
+
+PART 24 — TEST BEFORE YOU SUBMIT
+
+This is VERY important.
+
+Don't finish coding and immediately submit.
+
+Run:
+
+TEST 1 — NORMAL
+
+Student:
+
+upload
+
+Faculty:
+
+verify
+
+Expected:
+
+Integrity VERIFIED
+Signature VALID
+Decryption allowed
+Original record...
+
+If this works, good.
+
+PART 25 — TEST TAMPERING
+
+Now deliberately change something.
+
+If question says:
+
+Modify one character in encrypted ciphertext.
+
+Do something like:
+
+records[0]["encrypted"] = (
+    records[0]["encrypted"][:5]
+    + bytes([records[0]["encrypted"][5] ^ 1])
+    + records[0]["encrypted"][6:]
+)
+
+Then Faculty verification.
+
+Expected:
+
+Integrity FAILED
+Signature INVALID
+Decryption NOT allowed
+
+That's your demonstration.
+
+PART 26 — If the question says modify plaintext file
+
+Do:
+
+with open("ISL-5CCE-A2.txt", "r") as f:
+    data = f.read()
+
+data = data.replace("95", "55")
+
+with open("ISL-5CCE-A2.txt", "w") as f:
+    f.write(data)
+
+Then hash again.
+
+Expected:
+
+OLD HASH != NEW HASH
+PART 27 — If the question asks to store encrypted data in a file
+
+Add:
+
+with open("encrypted_record.bin", "wb") as f:
+    f.write(encrypted)
+
+Retrieve:
+
+with open("encrypted_record.bin", "rb") as f:
+    encrypted = f.read()
+PART 28 — If they ask to store hash
+with open("hash.txt", "w") as f:
+    f.write(hash_value)
+
+Read:
+
+with open("hash.txt", "r") as f:
+    stored_hash = f.read()
+
+Then:
+
+if new_hash == stored_hash:
+    print("Integrity Verified")
+else:
+    print("Integrity Failed")
+PART 29 — If they ask RSA parameters
+
+Generate:
+
+private_key, public_key = generate_rsa_keys()
+
+Print:
+
+print("n =", private_key.n)
+print("e =", private_key.e)
+print("d =", private_key.d)
+
+Done.
+
+PART 30 — If they ask AES-128
+
+Immediately remember:
+
+AES-128
+   ↓
+16-byte key
+
+Example:
+
+key = b"1234567890123456"
+
+CBC:
+
+AES
+key = 16 bytes
+IV = 16 bytes
+PART 31 — If they ask DES
+
+Immediately remember:
+
+DES
+ ↓
+8-byte key
+8-byte IV in CBC
+
+Example:
+
+key = b"12345678"
+iv = b"abcdefgh"
+PART 32 — If they ask RSA encryption
+
+Remember:
+
+PUBLIC → ENCRYPT
+PRIVATE → DECRYPT
+
+Code:
+
+encrypted = rsa_encrypt(data, public_key)
+decrypted = rsa_decrypt(encrypted, private_key)
+PART 33 — If they ask RSA signature
+
+Different direction:
+
+PRIVATE → SIGN
+PUBLIC → VERIFY
+
+This is probably the single easiest thing to accidentally reverse, so remember:
+
+ENCRYPTION:
+
+PUBLIC  → ENCRYPT
+PRIVATE → DECRYPT
+
+
+SIGNATURE:
+
+PRIVATE → SIGN
+PUBLIC  → VERIFY
+PART 34 — If they ask ElGamal
+
+Don't panic.
+
+Find your ElGamal block.
+
+Question will generally give:
+
+p
+g
+x
+m / authorization code
+
+Use the exact parameters.
+
+For standard ElGamal:
+
+y = g^x mod p
+
+c1 = g^k mod p
+
+shared = y^k mod p
+
+c2 = m × shared mod p
+
+Then decryption:
+
+shared = c1^x mod p
+
+m = c2 × shared^-1 mod p
+
+Your template already has this.
+
+Do not invent new parameters if the question gives them.
+
+PART 35 — If they ask Diffie-Hellman
+
+Find DH block.
+
+You need:
+
+p
+g
+Alice private a
+Bob private b
+
+Then:
+
+A = g^a mod p
+B = g^b mod p
+
+Shared:
+
+Alice = B^a mod p
+Bob   = A^b mod p
+
+Check:
+
+if shared_alice == shared_bob:
+PART 36 — If they ask the financial advisor PYQ
+
+Immediately identify:
+
+FILE
+RSA
+CUSTOM HASH
+HASH FILE
+TAMPERING
+
+So use:
+
+BLOCK 1
+BLOCK 5
+BLOCK 9
+BLOCK 11
+BLOCK 12
+BLOCK 24
+
+Don't use SHA-256 unless the question asks for it.
+
+Because this question explicitly gives a custom hash function.
+
+PART 37 — If they ask Hospital AES + RSA + ElGamal
+
+Your brain:
+
+FILE
+ ↓
+AES
+ ↓
+ciphertext
+ ↓
+SHA-256
+ ↓
+hash
+
+AES KEY
+ ↓
+RSA
+ ↓
+encrypted AES key
+
+AUTHORIZATION CODE
+ ↓
+ElGamal
+ ↓
+encrypted authorization
+
+Then:
+
+verify hash
+    |
+    +---- FAIL → STOP
+    |
+   PASS
+    ↓
+RSA decrypt AES key
+    ↓
+AES decrypt file
+
+Use the hospital block.
+
+PART 38 — If they ask EduSecure
+
+Brain:
+
+STUDENT
+ ↓
+DES
+ ↓
+SHA
+ ↓
+RSA SIGN
+ ↓
+STORE
+
+FACULTY
+ ↓
+SHA VERIFY
+ ↓
+RSA VERIFY
+ ↓
+DES DECRYPT
+
+HOD
+ ↓
+HASH
+ ↓
+SIGNATURE VERIFY
+PART 39 — If they ask HealthSecure
+
+Brain:
+
+DOCTOR
+ ↓
+patient data
+ ↓
+RSA encrypt
+ ↓
+SHA
+ ↓
+RSA sign
+ ↓
+store
+
+NURSE
+ ↓
+view ciphertext
+ ↓
+hash verify
+ ↓
+signature verify
+ X
+NO PRIVATE KEY
+ X
+NO DECRYPTION
+
+ADMIN
+ ↓
+ID
+hash
+timestamp
+signature
+ X
+NO PLAINTEXT
+PART 40 — If they ask MediSecure
+
+Brain:
+
+PATIENT
+ ↓
+TXT FILE
+ ↓
+AES
+ ↓
+SHA
+ ↓
+RSA SIGN
+ ↓
+STORE
+
+DOCTOR
+ ↓
+HASH VERIFY
+ ↓
+SIGNATURE VERIFY
+ ↓
+AES DECRYPT
+
+AUDITOR
+ ↓
+filename
+hash
+timestamp
+signature verify

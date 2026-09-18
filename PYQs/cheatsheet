@@ -1,0 +1,648 @@
+'''
+Every one of these questions is basically asking you to do some combination of:
+
+A. Encrypt something
+So that unauthorized people cannot read it.
+
+B. Hash something
+So that you can detect whether it was changed.
+
+C. Sign something
+So that you can prove who created/sent it.
+
+D. Decrypt it
+Only after checking that it hasn't been tampered with and that the signature is valid.
+
+E. Give different users different permissions
+That's RBAC — Role-Based Access Control.
+
+
+
+            Encryption pipeline
+             ORIGINAL FILE
+                   |
+                   v
+              ENCRYPTION
+              AES / DES / RSA
+                   |
+                   v
+              CIPHERTEXT
+
+
+            Integrity pipeline
+              CIPHERTEXT
+                   |
+                   v
+                SHA-256
+                   |
+                   v
+                  HASH
+
+
+
+            Authentication pipeline
+                  HASH
+                   |
+                   v
+             RSA PRIVATE KEY
+                   |
+                   v
+               SIGNATURE
+
+
+
+            Verification pipeline
+                 CIPHERTEXT
+                     |
+                     v
+                  SHA-256
+                     |
+                     v
+                 NEW HASH
+                     |
+                     +----------+
+                                |
+                             compare
+                                |
+                     STORED HASH |
+                                |
+                                v
+                           SAME / NOT SAME
+
+SIGNATURE
+    +
+PUBLIC KEY
+    ↓
+VALID / INVALID
+
+
+
+-------------------------------------------------------------------------------
+STEP 1 — First read the question and make this table
+
+Before touching your code, write this on paper:
+
+Role	Can do	Cannot do
+Student	Encrypt, sign, upload, view own records	—
+Faculty	View, verify, decrypt	—
+HoD	View hash, verify signature	Decrypt/plaintext
+
+That's your RBAC plan.
+
+Then:
+
+Requirement	Template block
+DES	Block 3
+SHA-256	Block 4
+RSA signature	Block 6
+Files	Block 9
+Timestamp	Block 10
+Storage	Block 15
+Faculty verification/decryption	Block 19
+HoD restricted view	Block 20
+RBAC menu	Block 22
+
+Now you know exactly what you're building.
+
+STEP 2 — Don't use the entire master file
+
+This is VERY important.
+
+You don't take the 1,000-line master file and submit it.
+
+You take the pieces you need.
+
+For EduSecure, you need roughly:
+
+BLOCK 0
+BLOCK 3
+BLOCK 4
+BLOCK 6
+BLOCK 9
+BLOCK 10
+BLOCK 15
+BLOCK 18
+BLOCK 19
+BLOCK 20
+BLOCK 22
+
+You can delete:
+
+AES
+ElGamal
+DH
+custom hash
+HealthSecure
+MediSecure
+financial advisor
+etc.
+
+Because they aren't needed.
+
+STEP 3 — Understand what the Student actually does
+
+The question says Student:
+
+Encrypts academic records using DES.
+
+So suppose the student has:
+
+ISL-5CCE-A2.txt
+
+with:
+
+Name: Ayati
+Course: Information Security
+Marks: 95
+
+Student needs to turn this:
+
+PLAIN TEXT
+
+into:
+
+CIPHERTEXT
+
+using DES.
+
+So you take Block 3.
+
+STEP 4 — Put the student's DES information at the top
+
+For a simple lab implementation:
+
+des_key = input("Enter DES key (8 characters): ").encode()
+iv = input("Enter DES IV (8 characters): ").encode()
+
+For example, when running:
+
+Enter DES key (8 characters): 12345678
+Enter DES IV (8 characters): abcdefgh
+
+Now:
+
+DES KEY
+12345678
+
+is the secret key.
+
+And:
+
+IV
+abcdefgh
+
+is the initialization vector.
+
+Remember:
+
+DES key = 8 bytes
+DES IV  = 8 bytes
+STEP 5 — Read the student's file
+
+Question says:
+
+Encrypts a student's academic records, for example ISL-5CCE-A2.txt
+
+So use Block 9.
+
+filename = input("Enter academic record filename: ")
+
+data = read_text_file(filename)
+
+Suppose:
+
+filename = "ISL-5CCE-A2.txt"
+
+Then:
+
+ISL-5CCE-A2.txt
+        ↓
+       data
+
+and data contains the actual academic record.
+
+STEP 6 — Encrypt it using DES
+
+Now use:
+
+encrypted = des_encrypt(data, des_key, iv)
+
+Conceptually:
+
+ISL-5CCE-A2.txt
+       |
+       v
+      DES
+       |
+       v
+encrypted data
+
+Then:
+
+print("Encrypted record:", encrypted.hex())
+
+Why .hex()?
+
+Because encrypted data is bytes and is ugly to print directly.
+
+Hexadecimal makes it readable.
+
+STEP 7 — Now SHA-256
+
+Question says:
+
+Signs the SHA-256 hash of the encrypted record.
+
+This wording is important.
+
+You have:
+
+encrypted record
+
+So calculate:
+
+hash_value = sha256_hash(encrypted)
+
+NOT:
+
+sha256_hash(data)
+
+for this particular requirement.
+
+Your pipeline is:
+
+Academic record
+      ↓
+     DES
+      ↓
+Encrypted record
+      ↓
+   SHA-256
+      ↓
+     HASH
+STEP 8 — Generate student's RSA key pair
+
+Question says:
+
+Signs using his/her RSA private key.
+
+So the Student needs RSA keys.
+
+Use Block 1:
+
+private_key, public_key = generate_rsa_keys()
+
+You now have:
+
+PRIVATE KEY
+PUBLIC KEY
+
+Remember:
+
+PRIVATE → SIGN
+PUBLIC  → VERIFY
+STEP 9 — Student signs the encrypted record
+
+Now:
+
+signature = rsa_sign(encrypted, private_key)
+
+Conceptually:
+
+encrypted record
+       ↓
+    SHA-256
+       ↓
+      hash
+       ↓
+RSA PRIVATE KEY
+       ↓
+   SIGNATURE
+
+The student has now produced:
+
+encrypted data
+hash
+signature
+STEP 10 — Add timestamp
+
+Question explicitly asks for timestamps.
+
+So:
+
+timestamp = get_timestamp()
+
+Example:
+
+2026-09-18 13:45:20
+STEP 11 — Store everything in a record
+
+Now use the dictionary from Block 15.
+
+You want one object like:
+
+record = {
+    "filename": filename,
+    "encrypted": encrypted,
+    "hash": hash_value,
+    "signature": signature,
+    "iv": iv,
+    "timestamp": timestamp
+}
+
+Think of this as a little database row:
+
+------------------------------------------------
+ID       ISL-5CCE-A2.txt
+------------------------------------------------
+Encrypted  8F4A92...
+Hash       93AB...
+Signature  71C...
+IV         abcdefgh
+Timestamp  2026-09-18 13:45:20
+------------------------------------------------
+
+And then:
+
+records.append(record)
+
+Now it's stored.
+
+STEP 12 — What does "upload" mean?
+
+This is something that confuses beginners.
+
+The question isn't necessarily asking you to build Google Drive.
+
+"Upload" in a lab question can simply mean:
+
+Student creates record
+        ↓
+encrypt
+        ↓
+hash
+        ↓
+sign
+        ↓
+store in records[]
+
+So:
+
+records.append(record)
+
+is enough for a simple lab implementation.
+
+If they specifically demand persistent storage, you can save it to a file.
+
+STEP 13 — Now Faculty comes in
+
+This is where the security verification happens.
+
+Faculty sees:
+
+encrypted record
+hash
+signature
+timestamp
+
+Faculty has the shared DES key.
+
+The Faculty needs to:
+
+Recalculate hash
+Compare hash
+Verify RSA signature
+If valid → decrypt
+Show plaintext
+STEP 14 — Faculty recalculates the hash
+
+Faculty takes:
+
+encrypted record
+
+and calculates:
+
+new_hash = sha256_hash(encrypted)
+
+Now there are two hashes:
+
+stored_hash
+new_hash
+
+Compare:
+
+if new_hash == record["hash"]:
+
+If yes:
+
+INTEGRITY VERIFIED
+
+If no:
+
+INTEGRITY FAILED
+STEP 15 — Faculty verifies Student's RSA signature
+
+The Student created the signature using:
+
+Student PRIVATE KEY
+
+Faculty has:
+
+Student PUBLIC KEY
+
+So Faculty does:
+
+signature_ok = rsa_verify(
+    encrypted,
+    record["signature"],
+    public_key
+)
+
+If valid:
+
+Signature VALID
+
+Otherwise:
+
+Signature INVALID
+STEP 16 — Now comes the most important line
+
+The question says Faculty decrypts the record.
+
+But logically, you don't want to decrypt an untrusted/tampered record.
+
+So:
+
+if integrity_ok and signature_ok:
+
+then:
+
+    decrypted = des_decrypt(
+        encrypted,
+        des_key,
+        record["iv"]
+    )
+
+    print(decrypted.decode())
+
+Otherwise:
+
+else:
+    print("Verification failed")
+    print("Decryption blocked")
+
+This is the core of your security system.
+
+STEP 17 — What happens if someone tampers with the encrypted record?
+
+Suppose original encrypted data is:
+
+A82F91BC...
+
+Someone changes one byte:
+
+A82F92BC...
+
+Stored hash:
+
+H1
+
+New hash:
+
+H2
+
+Now:
+
+H1 != H2
+
+Therefore:
+
+INTEGRITY FAILED
+
+Your program should NOT decrypt.
+
+STEP 18 — Now the HoD
+
+The question says:
+
+HoD can view only the hashed academic records with timestamps.
+
+So HoD gets:
+
+filename
+hash
+timestamp
+
+Not:
+
+plaintext
+DES key
+private RSA key
+
+So your HoD function is tiny:
+
+def hod_view(record, public_key):
+
+    print("Filename:", record["filename"])
+    print("Hash:", record["hash"])
+    print("Timestamp:", record["timestamp"])
+
+    if rsa_verify(
+        record["encrypted"],
+        record["signature"],
+        public_key
+    ):
+        print("Signature VALID")
+    else:
+        print("Signature INVALID")
+
+Notice something?
+
+There is no:
+
+des_decrypt(...)
+
+inside the HoD function.
+
+That's how you enforce the permission.
+
+STEP 19 — Now build the menu
+
+Question says:
+
+Develop a menu-driven Python program.
+
+So create:
+
+EDUSECURE
+
+1. Student
+2. Faculty
+3. HoD
+4. Exit
+
+Then:
+
+choice = input("Enter choice: ")
+
+If:
+
+1
+
+show Student menu.
+
+If:
+
+2
+
+show Faculty menu.
+
+If:
+
+3
+
+show HoD menu.
+
+STEP 20 — Student menu
+
+You can literally write:
+
+print("1. Upload record")
+print("2. View past records")
+print("3. Back")
+
+If they select 1:
+
+create_secure_des_record()
+
+If 2:
+
+view_records()
+STEP 21 — Faculty menu
+print("1. View records")
+print("2. Verify and decrypt")
+print("3. Back")
+
+1:
+
+view_records()
+
+2:
+
+verify_and_decrypt_des_record(...)
+STEP 22 — HoD menu
+print("1. View hashes")
+print("2. Verify signatures")
+print("3. Back")
+
+Then call:
+
+restricted_view(...)
+
+
+
+
+
+
+
+'''
