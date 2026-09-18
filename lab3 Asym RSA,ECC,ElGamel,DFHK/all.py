@@ -377,3 +377,71 @@
 #   YB=a^XB
 #   K=YB^XA=YA^XB
 #
+'''
+RSA
+Public:
+(n, e)
+
+Private:
+(n, d)
+
+Encrypt:
+C = M^e mod n
+
+Decrypt:
+M = C^d mod n
+ElGamal
+Public:
+(p, g, h)
+
+Private:
+x
+
+h = g^x mod p
+
+Encryption:
+c1 = g^k mod p
+c2 = m × h^k mod p
+
+Decryption:
+s = c1^x mod p
+m = c2 × s^-1 mod p
+Diffie-Hellman
+Alice:
+private = a
+public  = g^a mod p
+
+Bob:
+private = b
+public  = g^b mod p
+
+Alice:
+S = B^a mod p
+
+Bob:
+S = A^b mod p
+
+Alice S == Bob S
+ECC
+
+The important thing to remember for your lab is:
+
+Private key
+     ↓
+Public key
+     ↓
+Ephemeral key
+     ↓
+ECDH
+     ↓
+Shared secret
+     ↓
+HKDF
+     ↓
+AES key
+     ↓
+AES-GCM encryption
+
+So don't expect ECC itself to directly turn "Secure Transactions" into a ciphertext integer like RSA does.
+
+'''
